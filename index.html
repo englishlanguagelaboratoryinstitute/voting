@@ -11,7 +11,7 @@
   <style>
     :root {
       /* ── LOGO — paste your image URL here ── */
-      --logo-url: "YOUR_LOGO_URL_HERE";
+      --logo-url: "logo.png";
 
       /* ── BRAND PALETTE: forest green / gold / white / black ── */
       --bg-main:      #f7f6f2;   /* warm off-white */
@@ -204,7 +204,7 @@
       background: var(--primary);
     }
     .brand-mark .logo-fallback {
-      width: 34px; height: 34px;
+      width: 54px; height: 54px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--primary), var(--primary-light));
       color: #fff;
@@ -249,7 +249,7 @@
 <body>
 
   <div class="brand-mark">
-    <img src="YOUR_LOGO_URL_HERE" alt="Logo" class="logo-img" id="logoImg" onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='flex';">
+    <img src="logo.png" alt="Logo" class="logo-img" id="logoImg" onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='flex';">
     <div class="logo-fallback" id="logoFallback">E</div>
     <span class="brand-name">Ell Grand Debate</span>
   </div>
@@ -459,7 +459,7 @@
       var img = document.getElementById('logoImg');
       var fb  = document.getElementById('logoFallback');
       if (!img || !fb) return;
-      if (!img.src || img.src.includes('YOUR_LOGO_URL_HERE')) {
+      if (!img.src || img.src.includes('logo.png')) {
         img.style.display = 'none';
         fb.style.display = 'flex';
       }
