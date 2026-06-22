@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ell Grand Debate Stage Projection Suite</title>
+  <style>
+    :root {
+      --bg-dark: #0a0a0c;
+      --card-bg: #141419;
+      --accent: #ffd700;
+      --text-main: #ffffff;
+      --text-muted: #a0a0ab;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+    }
+    .slide-container { width: 100%; height: 100%; position: relative; }
+    .slide {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 4rem;
+      text-align: center;
+    }
+    .slide.active { display: flex; }
+    h1 { font-size: 3.5rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 2px; }
+    h2 { font-size: 2rem; color: var(--accent); margin-bottom: 2rem; }
+
+    .qr-box {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .qr-box img { width: 300px; height: 300px; display: block; }
+    .instructions { font-size: 1.8rem; color: var(--text-muted); max-width: 800px; }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      width: 100%;
+      max-width: 1200px;
+      margin-top: 1rem;
+    }
+    .chart-section {
+      background: var(--card-bg);
+      border-radius: 1rem;
+      padding: 2rem;
+      border: 1px solid #27272a;
+    }
+    .chart-section h3 {
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.5rem;
+      text-align: left;
+    }
+    .bar-container { margin-bottom: 1.5rem; text-align: left; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 1.2rem; margin-bottom: 0.5rem; }
+    .bar-bg { background: #27272a; height: 35px; border-radius: 5px; overflow: hidden; }
+    .bar-fill {
+      background: var(--accent);
+      height: 100%;
+      width: 0%;
+      transition: width 0.8s cubic-bezier(0.1, 1, 0.1, 1);
+    }
+
+    .total-votes {
+      font-size: 1rem;
+      color: var(--text-muted);
+      text-align: right;
+      margin-bottom: 1rem;
+    }
+
+    .controls-hint {
+      position: absolute;
+      bottom: 1rem; right: 1rem;
+      font-size: 0.9rem; color: var(--text-muted);
+      background: rgba(0,0,0,0.4); padding: 0.3rem 0.7rem; border-radius: 4px;
+    }
+    .slide-counter {
+      position: absolute;
+      bottom: 1rem; left: 1rem;
+      font-size: 0.9rem; color: var(--text-muted);
+      background: rgba(0,0,0,0.4); padding: 0.3rem 0.7rem; border-radius: 4px;
+    }
+    .empty-msg { font-size: 1.2rem; color: var(--text-muted); padding: 2rem 0; text-align: left; }
+
+    .api-warning {
+      position: fixed;
+      top: 1rem; left: 50%; transform: translateX(-50%);
+      background: #7f1d1d; color: #fca5a5;
+      padding: 0.5rem 1.5rem; border-radius: 6px;
+      font-size: 0.95rem; display: none; z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="api-warning" id="apiWarning">⚠ API URL not configured — edit CONFIG.apiUrl in script</div>
+  <div class="slide-container" id="deck"></div>
+  <div class="slide-counter" id="slideCounter"></div>
+  <div class="controls-hint">← → Arrows or Spacebar to navigate</div>
+
+  <script>
+    const CONFIG = {
+      apiUrl: "https://script.google.com/macros/s/AKfycbzQgwuC09p1QVLl0iKGG2t9I0ludnQoAETUeEALi4LzQCsBm21x5Lf0ClG9aKzMfp6lAw/exec",
+
+      matches: [
+        {
+          id: 1,
+          name: "Match 1 Session",
+          teams: ["TEAM 1", "TEAM 2"],
+          formUrl: "https://forms.gle/28Whb7ZGJ5h58YsE9"
+        },
+        {
+          id: 2,
+          name: "Match 2 Session",
+          teams: ["TEAM 3", "TEAM 4"],
+          formUrl: "https://forms.gle/BcRdWGN3C3S3Dmhb9"
+        },
+        {
+          id: 3,
+          name: "Match 3 Session",
+          teams: ["TEAM 5", "TEAM 6"],
+          formUrl: "https://forms.gle/7udYEtpcWR54vxTa7"
+        },
+        {
+          id: 4,
+          name: "Match 4 Session",
+          teams: ["TEAM 7", "TEAM 8"],
+          formUrl: "https://forms.gle/gFb3kHWpbXKXE6nt7"
+        },
+        {
+          id: 5,
+          name: "Match 5 Session",
+          teams: ["TEAM 9", "TEAM 10"],
+          formUrl: "https://forms.gle/1Uxj2xPnepVbvAV99"
+        }
+      ],
+
+      pollInterval: 3000
+    };
+
+    let currentSlideIndex = 0;
+    const slideElements = [];
+    let pollTimer = null;
+
+    // QR via image API — no external JS library needed
+    function getQrImageUrl(text) {
+      return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}`;
+    }
+
+    function buildBarsHtml(dataset, total) {
+      const keys = Object.keys(dataset);
+      if (keys.length === 0) return `<div class="empty-msg">No submissions recorded yet...</div>`;
+      let html = `<div class="total-votes">Total votes: ${total}</div>`;
+      keys.forEach(key => {
+        const votes = dataset[key];
+        const pct = total > 0 ? Math.round((votes / total) * 100) : 0;
+        html += `
+          <div class="bar-container">
+            <div class="bar-label">
+              <span>${key}</span>
+              <strong>${votes} vote${votes !== 1 ? 's' : ''} (${pct}%)</strong>
+            </div>
+            <div class="bar-bg">
+              <div class="bar-fill" style="width:${pct}%"></div>
+            </div>
+          </div>`;
+      });
+      return html;
+    }
+
+    function renderChart(containerId, titleText, dataset, total) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = `<h3>${titleText}</h3>` + buildBarsHtml(dataset, total);
+    }
+
+    async function fetchLiveMetrics() {
+      const activeSlide = slideElements[currentSlideIndex];
+      if (!activeSlide || activeSlide.dataset.type !== "results") return;
+
+      if (CONFIG.apiUrl === "YOUR_APPS_SCRIPT_WEB_APP_URL") {
+        document.getElementById("apiWarning").style.display = "block";
+        return;
+      }
+
+      const matchId = activeSlide.dataset.matchId;
+      try {
+        const res = await fetch(`${CONFIG.apiUrl}?cb=${Date.now()}`);
+        const data = await res.json();
+        const matchData = data[`Match ${matchId}`];
+        if (matchData) {
+          renderChart(
+            `winner-container-${matchId}`,
+            "Team Winner Standings",
+            matchData.winnerVotes,
+            matchData.totalVotes
+          );
+          renderChart(
+            `speaker-container-${matchId}`,
+            "Best Speaker Standings",
+            matchData.speakerVotes,
+            matchData.totalVotes
+          );
+        }
+      } catch (err) {
+        console.error("API Fetch Error:", err);
+      }
+    }
+
+    function updateSlideVisibility() {
+      slideElements.forEach((slide, idx) => {
+        slide.classList.toggle("active", idx === currentSlideIndex);
+      });
+      document.getElementById("slideCounter").textContent =
+        `Slide ${currentSlideIndex + 1} / ${slideElements.length}`;
+
+      clearInterval(pollTimer);
+      const active = slideElements[currentSlideIndex];
+      if (active && active.dataset.type === "results") {
+        fetchLiveMetrics();
+        pollTimer = setInterval(fetchLiveMetrics, CONFIG.pollInterval);
+      }
+    }
+
+    function initDeck() {
+      const deck = document.getElementById("deck");
+
+      CONFIG.matches.forEach(match => {
+        // — QR slide —
+        const qrSlide = document.createElement("div");
+        qrSlide.className = "slide";
+        qrSlide.dataset.type = "qr";
+        qrSlide.dataset.matchId = match.id;
+        qrSlide.innerHTML = `
+          <h1>${match.name}</h1>
+          <h2>Scan to Vote</h2>
+          <div class="qr-box">
+            <img src="${getQrImageUrl(match.formUrl)}" alt="Voting QR Code for ${match.name}">
+          </div>
+          <div class="instructions">
+            Vote for Team Winner &amp; Best Speaker — ${match.teams.join(" vs ")}
+          </div>`;
+        deck.appendChild(qrSlide);
+        slideElements.push(qrSlide);
+
+        // — Results slide —
+        const resultsSlide = document.createElement("div");
+        resultsSlide.className = "slide";
+        resultsSlide.dataset.type = "results";
+        resultsSlide.dataset.matchId = match.id;
+        resultsSlide.innerHTML = `
+          <h1>${match.name}</h1>
+          <h2>Real-Time Ballot Metrics</h2>
+          <div class="results-grid">
+            <div class="chart-section" id="winner-container-${match.id}">
+              <h3>Team Winner Standings</h3>
+              <div class="empty-msg">No submissions recorded yet...</div>
+            </div>
+            <div class="chart-section" id="speaker-container-${match.id}">
+              <h3>Best Speaker Standings</h3>
+              <div class="empty-msg">No submissions recorded yet...</div>
+            </div>
+          </div>`;
+        deck.appendChild(resultsSlide);
+        slideElements.push(resultsSlide);
+      });
+
+      updateSlideVisibility();
+    }
+
+    window.addEventListener("keydown", e => {
+      if (e.key === "ArrowRight" || e.key === " ") {
+        if (currentSlideIndex < slideElements.length - 1) {
+          currentSlideIndex++;
+          updateSlideVisibility();
+        }
+      } else if (e.key === "ArrowLeft") {
+        if (currentSlideIndex > 0) {
+          currentSlideIndex--;
+          updateSlideVisibility();
+        }
+      }
+    });
+
+    initDeck();
+  </script>
+</body>
+</html>
